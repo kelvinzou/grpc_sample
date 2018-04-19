@@ -19,7 +19,9 @@ class HelloworldService final : public Greeter::Service {
                   HelloReply* reply) override {
 
     std::string prefix ("hello ");
-    reply->set_message(prefix+ request->name());
+    reply->set_message(prefix + request->name()+ " for peer: " +
+                       context->peer()+ " for time: " +
+                       std::to_string(request->request_cnt()));
     return Status::OK;
   }
 };

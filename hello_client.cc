@@ -18,10 +18,10 @@ class HelloClient {
   HelloClient(std::shared_ptr<Channel> channel)
       : stub_(Greeter::NewStub(channel)){}
 
-  std::string Echo(const std::string& user) {
+  std::string Echo(const std::string& user, int count) {
     HelloRequest request;
     request.set_name(user);
-
+    request.set_request_cnt(count);
     HelloReply reply;
     ClientContext context;
     Status status = stub_->HelloReq(&context, request, &reply);
@@ -45,7 +45,10 @@ int main() {
       grpc::CreateChannel("localhost:50001", grpc::InsecureChannelCredentials()));
 
   std::string user("haha");
-  std::string reply = greeter.Echo(user);
-  std::cout<< "Received: " << reply << std::endl;
+  for(int i = 0; i < 20; i++) {
+    std::string reply = greeter.Echo(user, i);
+    std::cout<< "Received: " << reply << std::endl;
+  }
+
   return 0;
 }
