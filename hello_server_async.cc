@@ -50,22 +50,18 @@ class HelloServer final {
   class CallData {
    public:
     CallData(Greeter::AsyncService* service, ServerCompletionQueue* cq)
-        : service_(service), cq_(cq), responder_(&ctx_), state_(CREATE) {
-      Proceed();
+        : service_(service), cq_(cq), responder_(&ctx_) {
+      // As part of the initial ctor, we request the system to start processing
+      // the request and in this request, "this" acts are the tag uniquely
+      // identifying the request (so that different class CallData() can serve
+      // different requests concurrently, in this case it is the memory addr of
+      // this CallData instance.
+      state_ = PROCESS;
+      service_->RequestHelloReq(&ctx_, &req_, &responder_, cq_, cq_, this);
     }
 
     void Proceed() {
-      if (state_ == CREATE) {
-        // Make it to process state.
-        state_ = PROCESS;
-
-        // As part of the initial CREATE, we request the system to start processing
-        // the request and in this request, "this" acts are the tag uniquely
-        // identifying the request (so that different class CallData() can serve
-        // different requests concurrently, in this case it is the memory addr of
-        // this CallData instance.
-        service_->RequestHelloReq(&ctx_, &req_, &responder_, cq_, cq_, this);
-      } else if (state_ == PROCESS) {
+      if (state_ == PROCESS) {
         // Open a new instance for listening, and the instance will deallocate itself
         // as part of the FINISH state.
         new CallData(service_, cq_);
@@ -79,6 +75,9 @@ class HelloServer final {
         responder_.Finish(reply_, Status::OK, this);
       } else {
         GPR_ASSERT(state_ == FINISH);
+
+        // Other actions may be added before calling delete this.
+
         // Once it is in finish state, delete ourself.
         delete this;
       }
@@ -100,12 +99,12 @@ class HelloServer final {
     ServerAsyncResponseWriter<HelloReply> responder_;
 
     // A simple state machine.
-    enum CallState {CREATE, PROCESS, FINISH};
+    enum CallState {PROCESS, FINISH};
     CallState state_; // the current Serving state.
   };
 
   void HandleRpcs() {
-    // Spawn a new CallCallData instance to serve the new client.
+    // Spawn a the first CallCallData instance to serve a new client.
     new CallData(&service_, completion_q_.get());
     // This is used as a pointer to point to the data.
     void* tag;
