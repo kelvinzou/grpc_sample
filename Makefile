@@ -13,9 +13,12 @@ PROTOS_PATH = .
 
 vpath %.proto $(PROTOS_PATH)
 
-all: hello_server hello_client
+all: hello_server hello_server_async hello_client
 
 hello_server: hello.pb.o hello.grpc.pb.o hello_server.o
+	$(CXX) $^ $(LDFLAGS) -o $@
+
+hello_server_async: hello.pb.o hello.grpc.pb.o hello_server_async.o
 	$(CXX) $^ $(LDFLAGS) -o $@
 
 hello_client: hello.pb.o hello.grpc.pb.o hello_client.o
@@ -30,4 +33,5 @@ hello_client: hello.pb.o hello.grpc.pb.o hello_client.o
 	$(PROTOC) -I $(PROTOS_PATH) --cpp_out=. $<
 
 clean:
-	rm -f *.o *.pb.cc *.pb.h hello_server hello_client *~
+	rm -f *.o *.pb.cc *.pb.h hello_server_async hello_server hello_client *~
+	

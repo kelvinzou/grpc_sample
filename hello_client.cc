@@ -1,6 +1,7 @@
 #include <iostream>
 #include <memory>
 #include <string>
+#include <unistd.h>
 
 #include <grpcpp/grpcpp.h>
 
@@ -18,19 +19,18 @@ class HelloClient {
   HelloClient(std::shared_ptr<Channel> channel)
       : stub_(Greeter::NewStub(channel)){}
 
-  std::string Echo(const std::string& user, int count) {
+  void Echo(const std::string& user) {
     HelloRequest request;
     request.set_name(user);
-    request.set_request_cnt(count);
     HelloReply reply;
     ClientContext context;
     Status status = stub_->HelloReq(&context, request, &reply);
     if (status.ok()) {
-      return reply.message();
+      // std::cout<< "Received " << reply.message() << std::endl;
     } else {
       std::cout<< status.error_code() << " : "
                << status.error_message() << std::endl;
-      return "RPC failed!";
+      return;
     }
   }
 
@@ -44,11 +44,9 @@ int main() {
   HelloClient greeter(
       grpc::CreateChannel("localhost:50001", grpc::InsecureChannelCredentials()));
 
-  std::string user("haha");
-  for(int i = 0; i < 20; i++) {
-    std::string reply = greeter.Echo(user, i);
-    std::cout<< "Received: " << reply << std::endl;
+  std::string user("async world!");
+  for (int i = 0; i < 1000000; i++) {
+    greeter.Echo(user);
   }
-
   return 0;
 }
